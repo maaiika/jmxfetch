@@ -59,6 +59,8 @@ public class Instance {
                     "javax.management.openmbean.CompositeData",
                     "java.util.HashMap",
                     "java.util.Map");
+    private static final List<String> ARRAY_LIST_TYPES =
+            Arrays.asList("[Ljavax.management.ObjectName;");
     private static final List<String> MULTI_TYPES =
             Arrays.asList("javax.management.openmbean.TabularData");
     private static final int MAX_RETURNED_METRICS = 350;
@@ -566,6 +568,24 @@ public class Instance {
                                     checkName,
                                     connection,
                                     tags,
+                                    emptyDefaultHostname);
+                }else if (ARRAY_LIST_TYPES.contains(attributeType)){
+                    log.debug(
+                            ATTRIBUTE
+                                    + beanName
+                                    + " : "
+                                    + attributeInfo
+                                    + " has attributeInfo array list type");
+                    jmxAttribute =
+                            new JmxArrayAttribute(
+                                    attributeInfo,
+                                    beanName,
+                                    className,
+                                    instanceName,
+                                    checkName,
+                                    connection,
+                                    tags,
+                                    cassandraAliasing,
                                     emptyDefaultHostname);
                 } else {
                     try {
