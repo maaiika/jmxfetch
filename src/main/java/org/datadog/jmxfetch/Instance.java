@@ -1,16 +1,18 @@
 package org.datadog.jmxfetch;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.datadog.jmxfetch.reporter.Reporter;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -23,6 +25,8 @@ import java.util.Set;
 import javax.management.MBeanAttributeInfo;
 import javax.management.ObjectName;
 import javax.security.auth.login.FailedLoginException;
+
+import org.apache.commons.httpclient.HttpClient;
 
 @Slf4j
 public class Instance {
@@ -140,6 +144,14 @@ public class Instance {
         } else {
             // Allow global overrides
             this.refreshBeansPeriod = appConfig.getRefreshBeansPeriod();
+        }
+
+        if (instanceMap.containsKey("auth")) {
+            if (((String) instanceMap.get("auth")).startsWith("@@")) {
+                this.instanceMap.put("password", decryptAuth((String) instanceMap.get("auth")));
+            } else {
+                this.instanceMap.put("password", (String) instanceMap.get("auth"));
+            }
         }
 
         this.service = (String) instanceMap.get("service");
@@ -372,6 +384,33 @@ public class Instance {
             return ConnectionFactory.createConnection(connectionParams);
         }
         return connection;
+    }
+
+    private String decryptAuth(String auth) {
+        Map <String, String> envMap = System.getenv();
+        String antBaseUrl = envMap.get("ANT_BASEURL");
+        String res = "";
+        try {
+            String decryptUrl = antBaseUrl + "/monitor/api/v2/agent/config/encryption/decrypt?apikey=" + envMap.get("ANT_APIKEY");
+            HttpClient client = new HttpClient();
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, String> payload = new HashMap<String,String>();
+            payload.put("encryptPwd", auth);
+            StringRequestEntity requestEntity = new StringRequestEntity(
+                    mapper.writeValueAsString(payload),
+                    "application/json", "UTF-8");
+
+            PostMethod postMethod = new PostMethod(decryptUrl);
+            postMethod.setRequestEntity(requestEntity);
+            int code = 0;
+            code = client.executeMethod(postMethod);
+            if (code == 200) {
+                res = postMethod.getResponseBodyAsString();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return res;
     }
 
     /** Initializes the instance. May force a new connection.. */

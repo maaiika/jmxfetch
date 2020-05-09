@@ -5,7 +5,7 @@
 
     <groupId>com.datadoghq</groupId>
     <artifactId>jmxfetch</artifactId>
-    <version>0.35.1</version>
+    <version>0.35.2</version>
     <packaging>jar</packaging>
 
     <name>jmxfetch</name>
@@ -172,6 +172,11 @@
             <artifactId>mockito-core</artifactId>
             <version>${mockito.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-httpclient</groupId>
+            <artifactId>commons-httpclient</artifactId>
+            <version>3.1</version>
         </dependency>
     </dependencies>
     <scm>
